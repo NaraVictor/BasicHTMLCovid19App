@@ -5,40 +5,43 @@ let totalElem = document.getElementById("total"),
 	countryElem = document.getElementById("country"),
 	countriesElem = document.getElementById("countries"),
 	tbl = document.getElementById("covid-table"),
-	globalCount = document.getElementById("global-count"),
-	numbersElem = document.getElementsByClassName("numbers");
+	globalCount = document.getElementById("global-count");
 
-// Automatically loads Ghana's Covid-19 when page loads
+let countriesList;
+
+// Automatically loads Ghana's Covid-19 stats when page loads
 window.onload = () => {
-	getCountryData("Ghana");
+	getCountryData("Ghana", false);
+	populateCountriesList(countriesList);
+	populateTable(countriesList);
 };
 
 countriesElem.addEventListener("change", function () {
-	getCountryData(this.value);
+	getCountryData(this.value, true);
 });
 
 //fetch covid-19 data for a specific country
-function getCountryData(country) {
+function getCountryData(country, state) {
 	let xhr = new XMLHttpRequest();
 	xhr.onreadystatechange = function () {
 		if (xhr.readyState === XMLHttpRequest.DONE) {
-			let data = JSON.parse(xhr.response);
-			let cty = data.Countries.filter((c) => c.Country === country);
-			if (cty == undefined || cty == null) {
-				return countryNotFound(cty);
+			countriesList = JSON.parse(xhr.response);
+			let cty = countriesList.Countries.filter((c) => c.Country === country);
+			if (cty.length == 0) {
+				return countryNotFound(country);
 			}
-			populateCountriesList(data);
+
 			displayCountryData(cty);
-			populateTable(data);
 		}
 	};
 
-	xhr.open("GET", "https://api.covid19api.com/summary", true);
+	xhr.open("GET", "https://api.covid19api.com/summary", state);
 	xhr.send();
 }
 
 function displayCountryData(data) {
 	countryElem.innerText = `${data[0].Country}'s Stats`;
+
 	totalElem.innerText = data[0].TotalConfirmed;
 	recoveredElem.innerText = data[0].TotalRecovered;
 	deathElem.innerText = data[0].TotalDeaths;
@@ -46,14 +49,13 @@ function displayCountryData(data) {
 }
 
 function countryNotFound(cty) {
-	countryElem.innerText = `Country (${cty[0].Country}) not found!`;
+	countryElem.innerText = `Country (${cty}) not found!`;
 	countryElem.style.color = "red";
 }
 
 function populateTable(data) {
-	let { Countries: c } = data,
-		i = 1;
-	tbl.innerHTML = c.map(
+	let i = 1;
+	tbl.innerHTML = data.Countries.map(
 		(d) =>
 			`
             <tr>
@@ -65,7 +67,7 @@ function populateTable(data) {
                 <td>${d.TotalDeaths}</td>
             </tr>
             `
-	);
+	).join("");
 	globalCount.innerText = `(${i})`;
 }
 
